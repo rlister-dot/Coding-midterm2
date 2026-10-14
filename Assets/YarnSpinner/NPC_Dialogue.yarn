@@ -1,0 +1,36 @@
+﻿title: loadPhase
+---
+<<declare $dialogPhase = "">>
+
+<<setPhase NPC>>
+
+<<if $dialogPhase == "begin">>
+    <<jump Start>>
+<<elseif $dialogPhase == "comeback">>
+    <<jump CheckForPhone>>
+<<else>>
+    <<jump CheckForPhone>>
+<<endif>>
+===
+
+title: Start
+---
+Nicholas: Hello! I'm frantic—I left my phone back outside on the street. 
+Nicholas: Could you head back out to the main scene and grab it for me?
+-> Yes, I will find it.
+    <<getPhase NPC "comeback">>  
+    Nicholas: Thank you! I'll stay right here waiting for you.
+-> No, look for it yourself.
+    Nicholas: Well... that's incredibly rude of you.
+===
+
+title: CheckForPhone
+---
+<<if player_has_phone()>>
+    Nicholas: Oh my goodness, you found my phone!
+    Nicholas: Thank you so much for bringing it back into the house for me.
+<<else>>
+    Nicholas: Have you gotten my phone yet? Go back and get it!
+    Nicholas: It should be out there in the main area.
+<<endif>> 
+===
