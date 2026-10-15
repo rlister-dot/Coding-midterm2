@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 3
   tags:
   - NPC
+  - CinemachineTarget
+  - Wall
+  - SceneSpawnPoint
   layers:
   - Default
   - TransparentFX

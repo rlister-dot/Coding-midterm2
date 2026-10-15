@@ -6,27 +6,30 @@ using Yarn.Unity;
 
 public class NPC_Interact : MonoBehaviour
 {
-    //TODO: Get storyData to `set` the phase of our Yarn Spinner Scripts
-    //TODO: Set storyData from Yarn Spinner Scripts
+    //Need to find a way to detect dialogue runner... it not working
+    //computer/phone collection
 
 
     public TextMeshProUGUI promtText;
     public string interactText;
     public bool canInteract;
-    public DialogueRunner npcDialogue;
-    public npcData storyData;
 
+    private DialogueRunner npcDialogue;
+    public npcData storyData;
 
     public void Start()
     {
-        //Setting this variable looks a bit `static` for our system design tastes
-        //BUT we can practice a bit of deliberate design because we know we're creating
-        //a systematized NPC rig & interaction for multiple instances
+        FindLivingDialogueRunner();
+    }
+
+    private void FindLivingDialogueRunner()
+    {
+        npcDialogue = Object.FindFirstObjectByType<DialogueRunner>();
     }
 
     public void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.tag == "Player")
+        if (other.gameObject.CompareTag("Player"))
         {
             setText(interactText);
             canInteract = true;
@@ -35,7 +38,7 @@ public class NPC_Interact : MonoBehaviour
 
     public void OnTriggerExit(Collider other)
     {
-        if (other.gameObject.tag == "Player")
+        if (other.gameObject.CompareTag("Player"))
         {
             setText("");
             canInteract = false;
@@ -44,36 +47,51 @@ public class NPC_Interact : MonoBehaviour
 
     public void setText(string txt)
     {
-        promtText.text = txt;
+        if (promtText != null) promtText.text = txt;
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (canInteract)
         {
             if (Keyboard.current.eKey.wasPressedThisFrame)
             {
-                Debug.Log("Start NPC Dialogue");
-                setText("");
-              
-                npcDialogue.StartDialogue(storyData.startingNode);
-                canInteract = false;
+                FindLivingDialogueRunner();
+
+                if (npcDialogue == null)
+                {
+                    Debug.LogError("NPC_Interact: Critical Error! No living DialogueRunner found in the scene.");
+                    return;
+                }
+
+                if (!npcDialogue.IsDialogueRunning)
+                {
+                    Debug.Log("Start NPC Dialogue from node: " + storyData.startingNode);
+                    setText("");
+                    npcDialogue.StartDialogue(storyData.startingNode);
+                    canInteract = false;
+                }
             }
         }
     }
 
-    //This yarn command / method `sets` the $dialogPhase variable in my YarnSpinner script.
-    //We use this in our `loadPhase` node to route the YarnSpinner script to it's correct story path.
+    
     [YarnCommand("setPhase")]
     public void setStoryPhase()
     {
-        InMemoryVariableStorage vStore = GameObject.FindAnyObjectByType<InMemoryVariableStorage>();
-        vStore.SetValue("$dialogPhase", storyData.currentPhase.ToString());
+        if (_GameController.instance != null && _GameController.instance.currentCoins >= 1)
+        {
+            storyData.currentPhase = npcData.dialogPhase.quest_completed;
+        }
+
+        InMemoryVariableStorage vStore = Object.FindFirstObjectByType<InMemoryVariableStorage>();
+        if (vStore != null)
+        {
+            vStore.SetValue("$dialogPhase", storyData.currentPhase.ToString());
+        }
     }
 
-    //This yarn command / method `gets` a string from YarnSpinner and "converts" that to the phase we're on in our npcData scriableObject;
-    //It also contains a nice lil' error reporting in case we pass a string that does not correspond to any dialogPhase.
+
     [YarnCommand("getPhase")]
     public void getStoryPhase(string phase)
     {
@@ -90,14 +108,17 @@ public class NPC_Interact : MonoBehaviour
             Debug.LogError("The string you passed in the Yarn Script does not match any current dialogPhase in the npcData scriptableObject");
         }
 
-        if(_GameController.instance.currentCoins == 1)
+        if (_GameController.instance != null && _GameController.instance.currentCoins == 1)
         {
-            phase = "quest_completed";
+            storyData.currentPhase = npcData.dialogPhase.quest_completed;
+
+            InMemoryVariableStorage vStore = Object.FindFirstObjectByType<InMemoryVariableStorage>();
+            if (vStore != null) vStore.SetValue("$dialogPhase", "quest_completed");
         }
     }
 
     public void OnApplicationQuit()
     {
-        storyData.dataReset();
+        if (storyData != null) storyData.dataReset();
     }
 }

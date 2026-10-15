@@ -1,5 +1,4 @@
 using StarterAssets;
-using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -8,18 +7,21 @@ using Yarn.Unity;
 
 public class _GameController : MonoBehaviour
 {
-    public bool hasPhone = false;
-    public static _GameController instance { get; private set; }
+    //FIX SPAWN POINT!!!!!!!!
+    //Change Coingot method to work
 
+
+    public static _GameController instance { get; private set; }
     public updateCoins updateUI;
     public CoinsUI coinInventory;
     public int currentCoins;
-    public GameObject ThirdPersonRig;
-    public Transform mainStartingTransform;
 
+    public GameObject ThirdPersonRig;
+
+    public Transform mainStartingTransform;
     public Vector3 loadPos;
     public Quaternion loadRot;
-    public List<string> coinsCollected;
+    public List<string> coinsCollected = new List<string>();
 
     public void Awake()
     {
@@ -31,57 +33,52 @@ public class _GameController : MonoBehaviour
         {
             instance = this;
             SceneManager.sceneLoaded += OnSceneLoad;
-        }
-        DontDestroyOnLoad(this);
-
-        // REGISTRATION SCRIPT: Tells Yarn Spinner that "player_has_phone()" exists
-        DialogueRunner dRun = GameObject.FindAnyObjectByType<DialogueRunner>();
-        if (dRun != null)
-        {
-            dRun.Dialogue.Library.RegisterFunction("player_has_phone", () => hasPhone);
+            DontDestroyOnLoad(this);
         }
     }
-
-
-
+    //Potential Spawn fix 
     public void OnSceneLoad(Scene scene, LoadSceneMode mode)
     {
-        if (scene.buildIndex == 0)
+        
+        GameObject spawnPointObject = GameObject.FindWithTag("SceneSpawnPoint");
+        if (spawnPointObject != null)
         {
-            if (loadPos == Vector3.zero)
+            mainStartingTransform = spawnPointObject.transform;
+        }
+
+       
+        if (loadPos == Vector3.zero)
+        {
+           
+            if (mainStartingTransform != null)
             {
                 SpawnThirdPersonPrefab(mainStartingTransform.position, mainStartingTransform.rotation);
             }
             else
             {
-                SpawnThirdPersonPrefab(loadPos, loadRot);
+              
+                SpawnThirdPersonPrefab(Vector3.zero, Quaternion.identity);
             }
-            loadCoins();
         }
-        else if (scene.buildIndex == 1)
+        else
         {
-            DialogueRunner targetRunner = GameObject.FindAnyObjectByType<DialogueRunner>();
+           
+            SpawnThirdPersonPrefab(loadPos, loadRot);
+        }
 
-            // Fallback string-check if assembly definition isolates the script types
-            if (targetRunner == null)
+       
+        loadPos = Vector3.zero;
+        loadRot = Quaternion.identity;
+
+        loadCoins();
+
+        if (scene.buildIndex == 1)
+        {
+            DialogueRunner dRun = GameObject.FindAnyObjectByType<DialogueRunner>();
+            if (dRun != null)
             {
-                foreach (MonoBehaviour mono in GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
-                {
-                    if (mono.GetType().Name == "MoreDialoguePers")
-                    {
-                        targetRunner = mono.GetComponent<DialogueRunner>();
-                        break;
-                    }
-                }
-            }
-
-            if (targetRunner != null)
-            {
-                targetRunner.onDialogueStart.RemoveAllListeners();
-                targetRunner.onDialogueComplete.RemoveAllListeners();
-
-                targetRunner.onDialogueStart.AddListener(() => setPlayerMovement(true));
-                targetRunner.onDialogueComplete.AddListener(() => setPlayerMovement(false));
+                dRun.onDialogueStart.AddListener(() => setPlayerMovement(true));
+                dRun.onDialogueComplete.AddListener(() => setPlayerMovement(false));
             }
         }
     }
@@ -97,17 +94,41 @@ public class _GameController : MonoBehaviour
         loadRot = rot;
     }
 
-    public void coinGot(string coinID)
+   
+        public void coinGot(string coinID)
     {
-        coinsCollected.Add(coinID);
-        currentCoins++;
-        updateUI.AddListener(coinInventory.addCoins);
-        updateUI.Invoke(currentCoins);
+        if (coinsCollected == null) coinsCollected = new List<string>();
+        
+        if (!coinsCollected.Contains(coinID))
+        {
+            coinsCollected.Add(coinID);
+            currentCoins++;
+            
+            
+            
+            updateUI.Invoke(currentCoins);
+        }
     }
+
+    
+    public void loadCoinUI(CoinsUI ui)
+    {
+        coinInventory = ui;
+        
+        if (coinInventory != null)
+        {
+           
+            updateUI.RemoveListener(coinInventory.addCoins);
+            updateUI.AddListener(coinInventory.addCoins);
+        }
+    }
+
 
     public void loadCoins()
     {
-        _CoinCollect[] allCoinsInScene = FindObjectsByType<_CoinCollect>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        
+        _CoinCollect[] allCoinsInScene = FindObjectsByType<_CoinCollect>(FindObjectsSortMode.None);
+
         if (coinsCollected != null)
         {
             foreach (_CoinCollect coin in allCoinsInScene)
@@ -120,13 +141,9 @@ public class _GameController : MonoBehaviour
         }
     }
 
-    public void loadCoinUI(CoinsUI ui)
-    {
-        coinInventory = ui;
-    }
+   
 
-    // Controls player freeze state cleanly without duplicate signatures
-    public void setPlayerMovement(bool freezePlayer)
+    public void setPlayerMovement(bool b)
     {
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player == null) return;
@@ -134,7 +151,7 @@ public class _GameController : MonoBehaviour
         ThirdPersonController tpc = player.GetComponent<ThirdPersonController>();
         if (tpc != null)
         {
-            tpc.enabled = !freezePlayer;
+            tpc.enabled = !b; 
         }
     }
 
@@ -146,16 +163,7 @@ public class _GameController : MonoBehaviour
             player.transform.position = newPos.position;
         }
     }
-
-    [YarnCommand("set_int")]
-    public void SetInterger(int interger)
-    {
-        if (currentCoins == 1)
-        {
-            interger = 1;
-        }
-    }
-
-    [System.Serializable]
-    public class updateCoins : UnityEvent<int> { }
 }
+
+[System.Serializable]
+public class updateCoins : UnityEvent<int> { }

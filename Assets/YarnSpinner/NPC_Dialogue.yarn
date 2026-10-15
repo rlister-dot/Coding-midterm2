@@ -8,6 +8,8 @@
     <<jump Start>>
 <<elseif $dialogPhase == "comeback">>
     <<jump CheckForPhone>>
+<<elseif $dialogPhase == "quest_completed">>
+    <<jump RewardNode>>
 <<else>>
     <<jump CheckForPhone>>
 <<endif>>
@@ -15,22 +17,28 @@
 
 title: Start
 ---
-Nicholas: Hello! I'm frantic—I left my phone back outside on the street. 
-Nicholas: Could you head back out to the main scene and grab it for me?
+Nicholas: Hello it is me your professor Nicholas 
+Nicholas: I forgot my computer at the top of the parkour mountain
+Nicholas: Can u get it I will give you an A if you do 
 -> Yes, I will find it.
     <<getPhase NPC "comeback">>  
-    Nicholas: Thank you! I'll stay right here waiting for you.
+    Nicholas: Thank you I will wait here at home
 -> No, look for it yourself.
-    Nicholas: Well... that's incredibly rude of you.
+    Nicholas: Ok well then I give you an F 
 ===
 
 title: CheckForPhone
 ---
-<<if player_has_phone()>>
-    Nicholas: Oh my goodness, you found my phone!
-    Nicholas: Thank you so much for bringing it back into the house for me.
-<<else>>
-    Nicholas: Have you gotten my phone yet? Go back and get it!
-    Nicholas: It should be out there in the main area.
-<<endif>> 
+Nicholas: Do you have my computer?
+Nicholas: No? why are you still here then?
+===
+
+title: RewardNode
+---
+Nicholas: OMG my computer
+Nicholas: Thank you so much for bringing it back into the house for me.
+Nicholas: But actually I'm not gonna give you an A for that because 
+Nicholas: Academic integrity is important 
+
+
 ===
